@@ -1,6 +1,6 @@
 // src/dto/responses/RegisterResponseDto.ts
 import { Response } from 'express';
-import BaseResponseDto from './BaseResponseDto';
+import BaseResponseDto from '../BaseResponseDto';
 
 export default class RegisterResponseDto extends BaseResponseDto {
   constructor(

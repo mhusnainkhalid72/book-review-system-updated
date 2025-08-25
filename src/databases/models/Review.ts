@@ -16,7 +16,8 @@ const ReviewSchema = new Schema<IReview>(
     rating: { type: Number, required: true, min: 0, max: 5 },
     message: { type: String, default: '' }
   },
-  { timestamps: true }
+  { timestamps: true ,
+      versionKey: false   }
 );
 
 // One review per user per book

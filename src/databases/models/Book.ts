@@ -18,7 +18,12 @@ const BookSchema = new Schema<IBook>(
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     averageRating: { type: Number, default: 0 }
   },
-  { timestamps: true }
+
+  { 
+    timestamps: true,
+    versionKey: false   
+  }
+
 );
 
 export const BookModel = mongoose.model<IBook>('Book', BookSchema);
