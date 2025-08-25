@@ -13,7 +13,7 @@ const users = new UserRepository();
 const service = new AuthService(users);
 const controller = new AuthController(service);
 
-router.post('/register', validate(RegisterDTOSchema), asyncHandler(controller.register));
-router.post('/login', validate(LoginDTOSchema), asyncHandler(controller.login));
+router.post('/register', validate(RegisterDTOSchema), asyncHandler(controller.register.bind(controller)));
+router.post('/login', validate(LoginDTOSchema), asyncHandler(controller.login.bind(controller)));
 
 export default router;

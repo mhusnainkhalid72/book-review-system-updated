@@ -15,7 +15,7 @@ export const validate =
         .map(i => `${i.path.join('.')}: ${i.message}`)
         .join('; ');
 
-      return next(new AppError(msg, 400)); // 400 Bad Request
+      return next(new AppError(msg, 400));// 400 Bad Request
     }
 
     // Put validated payload into res.locals

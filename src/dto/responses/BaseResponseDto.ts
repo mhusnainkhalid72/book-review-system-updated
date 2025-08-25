@@ -1,4 +1,4 @@
-// src/dto/auth/responses/BaseResponseDto.ts
+// src/dto/responses/BaseResponseDto.ts
 import { Response } from 'express';
 
 export default class BaseResponseDto {
