@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { BookService } from "../services/BookService";
 import RedisClient from "../lib/RedisClient";
 
-// Response DTOs (one file per route)
 import ListBooksResponseDto from "../dto/responses/book/ListBooksResponseDto";
 import MineBooksResponseDto from "../dto/responses/book/MineBooksResponseDto";
 import CreateBookResponseDto from "../dto/responses/book/CreateBookResponseDto";
@@ -14,12 +13,8 @@ type SortKey = "recent" | "high" | "low";
 export class BookController {
   constructor(private books: BookService) {}
 
-  /**
-   * GET /books
-   * Supports sorting: ?sort=recent|high|low
-   * Uses Redis cache per sort key. TTL = 60 seconds.
-   */
-  list = async (req: Request, res: Response) => {
+
+  public async list(req: Request, res: Response) {
     try {
       const sort: SortKey = (req.query.sort as SortKey) || "recent";
 
@@ -29,7 +24,6 @@ export class BookController {
       // try cache first
       const cached = await redis.get(cacheKey);
       if (cached) {
-        // we keep the same DTO shape; if you need a "cached" flag, put it in the message
         return new ListBooksResponseDto(
           res,
           true,
@@ -38,15 +32,11 @@ export class BookController {
         );
       }
 
-      // fetch fresh, then cache
+   
       const result = await this.books.listAll(sort);
       await redis.set(cacheKey, JSON.stringify(result), "EX", 60);
 
-      return new ListBooksResponseDto(
-        res,
-        true,
-        "Books fetched successfully",
-        result
+      return new ListBooksResponseDto( res, true, "Books fetched successfully",result
       );
     } catch (err: any) {
       return new ListBooksResponseDto(
@@ -55,13 +45,10 @@ export class BookController {
         err.message || "Failed to fetch books"
       );
     }
-  };
+  }
 
-  /**
-   * GET /books/mine
-   * Returns books owned by the authenticated user.
-   */
-  mine = async (_req: Request, res: Response) => {
+ 
+  public async mine(_req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const result = await this.books.mine(user.id);
@@ -79,21 +66,17 @@ export class BookController {
         err.message || "Failed to fetch your books"
       );
     }
-  };
+  }
 
-  /**
-   * POST /books
-   * Body is validated upstream; dto is in res.locals.validated
-   * On write, invalidate all list caches.
-   */
-  create = async (req: Request, res: Response) => {
+
+  public async create(req: Request, res: Response) {
     try {
       const user = res.locals.user;
-      const dto = res.locals.validated; // { title, author, description? }
+      const dto = res.locals.validated; 
 
       const created = await this.books.create(user.id, dto);
 
-      // invalidate cached lists
+   
       const redis = RedisClient.getInstance();
       await redis.del("books:recent", "books:high", "books:low");
 
@@ -110,15 +93,10 @@ export class BookController {
         err.message || "Book creation failed"
       );
     }
-  };
+  }
 
-  /**
-   * PUT /books/:id
-   * Validates payload upstream; dto in res.locals.validated
-   * Checks ownership in service.
-   * On write, invalidate all list caches.
-   */
-  update = async (req: Request, res: Response) => {
+  
+  public async update(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const dto = res.locals.validated;
@@ -142,19 +120,10 @@ export class BookController {
         err.message || "Book update failed"
       );
     }
-  };
+  }
 
-  /**
-   * DELETE /books/:id
-   * Checks ownership in service.
-   * On write, invalidate all list caches.
-   *
-   * NOTE: Your old controller returned 204 No Content.
-   * With the BaseResponseDto pattern (which always sends JSON),
-   * we return 200 with a message. If you require strict 204,
-   * add a special-case in BaseResponseDto to `send()` when statusCode===204.
-   */
-  remove = async (req: Request, res: Response) => {
+ 
+  public async remove(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const bookId = req.params.id;
@@ -172,5 +141,5 @@ export class BookController {
         err.message || "Book deletion failed"
       );
     }
-  };
+  }
 }

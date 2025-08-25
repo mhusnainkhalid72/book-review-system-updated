@@ -1,6 +1,6 @@
 import { IBookRepository } from '../repositories/interfaces/IBookRepository';
 import { AppError } from '../error/AppError';
-import { Types } from 'mongoose';   // ✅ Import ObjectId type
+import { Types } from 'mongoose';   
 
 export class BookService {
   constructor(private books: IBookRepository) {}
@@ -11,7 +11,7 @@ export class BookService {
   ) {
     return await this.books.create({
       ...data,
-      user: new Types.ObjectId(userId),  // ✅ Convert string -> ObjectId
+      user: new Types.ObjectId(userId),  
     });
   }
 

@@ -3,8 +3,8 @@ import { AuthController } from '../controllers/AuthController';
 import { UserRepository } from '../repositories/implementations/UserRepository';
 import { AuthService } from '../services/AuthService';
 import { validate } from '../middlewares/validationMiddleware';
-import { RegisterDTOSchema } from '../dto/auth/RegisterDTO';
-import { LoginDTOSchema } from '../dto/auth/LoginDTO';
+import { RegisterDTOSchema } from '../dto/request/auth/RegisterDTO';
+import { LoginDTOSchema } from '../dto/request/auth/LoginDTO';
 import { asyncHandler } from '../lib/asyncHandler';
 
 const router = Router();
