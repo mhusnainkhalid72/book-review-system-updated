@@ -11,7 +11,7 @@ export class AuthService {
   // Register a new user
   async register(name: string, email: string, password: string) {
     const existing = await this.users.findByEmail(email);
-    if (existing) throw new AppError('Email already in use', 409);
+    if (existing) throw new AppError('Email already in use', 409); 
 
     const hash = await bcrypt.hash(password, 10);
     const user = await this.users.create({ name, email, password: hash });

@@ -6,5 +6,6 @@ export const env = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
   REDIS_PORT: Number(process.env.REDIS_PORT || 6379),
-  REDIS_PASSWORD: process.env.REDIS_PASSWORD
+  REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+  SESSION_SECRET: process.env.SESSION_SECRET || 'changeme',  
 };
