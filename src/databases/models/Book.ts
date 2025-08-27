@@ -4,8 +4,8 @@ export interface IBook extends Document {
   title: string;
   author: string;
   description?: string;
-  user: Types.ObjectId; // owner
-  averageRating: number; // denormalized for sorting
+  user: Types.ObjectId; 
+  averageRating: number; 
   createdAt: Date;
   updatedAt: Date;
 }

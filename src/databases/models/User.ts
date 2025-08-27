@@ -1,6 +1,8 @@
-import mongoose, { Schema, Document } from 'mongoose';
+// src/databases/models/User.ts
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IUser extends Document {
+  _id: Types.ObjectId; 
   name: string;
   email: string;
   password: string;

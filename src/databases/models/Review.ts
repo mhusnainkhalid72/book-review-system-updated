@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 export interface IReview extends Document {
   book: Types.ObjectId;
   user: Types.ObjectId;
-  rating: number; // 0..5 inclusive
+  rating: number; 
   message?: string;
   createdAt: Date;
   updatedAt: Date;

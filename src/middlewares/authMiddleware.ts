@@ -1,28 +1,54 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
-import { UserModel } from '../databases/models/User';
-import { AppError } from '../error/AppError';
+// src/controllers/AuthController.ts
+import { Request, Response } from "express";
+import { AuthService } from "../services/AuthService";
+import { SessionService } from "../services/SessionService";
+import { UserModel } from "../databases/models/User";
+import LoginResponseDto from "../dto/responses/auth/LoginResponseDto";
+import RegisterResponseDto from "../dto/responses/auth/RegisterResponseDto";
 
-export interface JwtPayload {
-  id: string;
-}
+export class AuthController {
+  constructor(private auth: AuthService, private sessions: SessionService) {}
 
-export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  // Handle register
+  public async register(req: Request, res: Response) {
+    const { email, password, name } = req.body;
 
-  if (!token) return next(new AppError('No token provided', 401));
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
-  try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-    const user = await UserModel.findById(decoded.id).lean();
-    if (!user) return next(new AppError('User not found', 401));
+    const newUser = await UserModel.create({ email, password, name });
+    const { token, session } = await this.sessions.createForLogin(newUser._id.toString(), req);
 
-    // Attach to res.locals (as requested)
-    res.locals.user = { id: user._id.toString(), email: user.email, name: user.name };
-    next();
-  } catch {
-    next(new AppError('Invalid token', 401));
+    res.setHeader("Authorization", `Bearer ${token}`);
+    res.status(201).json({ message: "User registered successfully", token, user: newUser });
   }
-};
+
+  // Handle login
+  public async login(req: Request, res: Response) {
+    const { email, password } = req.body;
+
+    const user = await UserModel.findOne({ email });
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const { token, session } = await this.sessions.createForLogin(user._id.toString(), req);
+
+    res.setHeader("Authorization", `Bearer ${token}`);
+    res.status(200).json({ token, user });
+  }
+
+  // Handle logout
+  public async logout(req: Request, res: Response) {
+    const token = req.headers["authorization"]?.split(" ")[1];
+
+    if (token) {
+      await this.sessions.revokeByToken(token);
+    }
+
+    res.status(200).json({ message: "Logged out successfully" });
+  }
+}

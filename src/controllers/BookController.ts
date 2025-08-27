@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { BookService } from "../services/BookService";
 import RedisClient from "../lib/RedisClient";
+import { Types } from "mongoose";
+
 
 import ListBooksResponseDto from "../dto/responses/book/ListBooksResponseDto";
 import MineBooksResponseDto from "../dto/responses/book/MineBooksResponseDto";
@@ -47,26 +49,35 @@ export class BookController {
     }
   }
 
- 
-  public async mine(_req: Request, res: Response) {
-    try {
-      const user = res.locals.user;
-      const result = await this.books.mine(user.id);
+ public async mine(_req: Request, res: Response) {
+  try {
+    console.log("user in res.locals:", res.locals.user); // DEBUG
+    const user = res.locals.user;
 
-      return new MineBooksResponseDto(
-        res,
-        true,
-        "Your books fetched successfully",
-        result
-      );
-    } catch (err: any) {
-      return new MineBooksResponseDto(
-        res,
-        false,
-        err.message || "Failed to fetch your books"
-      );
-    }
+    // handle both cases
+    const userId = user._id
+      ? user._id.toString()
+      : new Types.ObjectId(user.id).toString();
+
+    const result = await this.books.mine(userId);
+
+    return new MineBooksResponseDto(
+      res,
+      true,
+      "Your books fetched successfully",
+      result
+    );
+  } catch (err: any) {
+    return new MineBooksResponseDto(
+      res,
+      false,
+      err.message || "Failed to fetch your books"
+    );
   }
+}
+
+    
+  
 
 
   public async create(req: Request, res: Response) {

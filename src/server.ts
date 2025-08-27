@@ -10,7 +10,7 @@ const PORT = Number(process.env.PORT || 4000);
 (async () => {
   await connectMongo(process.env.MONGO_URI || 'mongodb://localhost:27017/book_review_system');
 
-  // Initialize Redis (singleton)
+
   RedisClient.getInstance();
 
   app.listen(PORT, () => {

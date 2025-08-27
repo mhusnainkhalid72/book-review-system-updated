@@ -1,19 +1,12 @@
-// src/dto/responses/LoginResponseDto.ts
-import { Response } from 'express';
-import BaseResponseDto from '../BaseResponseDto';
+import { Response } from "express";
+import BaseResponseDto from "../BaseResponseDto";
 
 export default class LoginResponseDto extends BaseResponseDto {
-  constructor(
-    res: Response,
-    success: boolean,
-    message: string,
-    token?: string,
-    name?: string
-  ) {
+  constructor(res: Response, success: boolean, message: string, name?: string, sessionToken?: string) {
     if (success) {
-      super(res, 200, 'pass', message, { token, name });
+      super(res, 200, "pass", message, { name, sessionToken });
     } else {
-      super(res, 401, 'fail', message, null);
+      super(res, 401, "fail", message, null);
     }
   }
 }

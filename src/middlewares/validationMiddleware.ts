@@ -18,7 +18,7 @@ export const validate =
       return next(new AppError(msg, 400));// 400 Bad Request
     }
 
-    // Put validated payload into res.locals
+
     res.locals.validated = parsed.data;
     next();
   };
