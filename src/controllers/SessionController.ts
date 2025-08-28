@@ -28,13 +28,29 @@ public async revoke(req: Request, res: Response) {
 
 
   public async revokeCurrent(req: Request, res: Response) {
-    try {
-      const token = (req.headers["x-session-token"] as string) || null;
-      if (!token) return new BaseResponseDto(res, 400, "fail", "Missing X-Session-Token");
-      await this.sessions.revokeByToken(token);
-      new BaseResponseDto(res, 200, "pass", "Current session revoked");
-    } catch (err: any) {
-      new BaseResponseDto(res, 500, "fail", err.message || "Failed to revoke current session");
+  try {
+
+    const token =
+      (req.headers["x-session-token"] as string) ||
+      req.headers["authorization"]?.split(" ")[1] ||
+      null;
+
+    if (!token) {
+      return new BaseResponseDto(res, 400, "fail", "Missing session token");
     }
+
+    // Revoke the session by token
+    await this.sessions.revokeByToken(token);
+
+    new BaseResponseDto(res, 200, "pass", "Current session revoked");
+  } catch (err: any) {
+    new BaseResponseDto(
+      res,
+      500,
+      "fail",
+      err.message || "Failed to revoke current session"
+    );
   }
+}
+
 }
