@@ -15,7 +15,7 @@ export const requireToken = async (req: Request, res: Response, next: NextFuncti
     return next(new AppError("Invalid or expired session token", 401));
   }
 
-  res.locals.user = session.user;  // Attach user data to the request
+ res.locals.user = { id: session.user.toString() }; // Attach user data to the request
 
   await session.updateOne({ lastActive: new Date() });  // Update last active timestamp
 

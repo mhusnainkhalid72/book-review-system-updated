@@ -1,26 +1,36 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IReview extends Document {
-  book: Types.ObjectId;
-  user: Types.ObjectId;
-  rating: number; 
-  message?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  user: mongoose.Types.ObjectId;
+  book: mongoose.Types.ObjectId;
+  rating: number;
+  message: string;
+  createdAt: Date;      
+  updatedAt: Date;      
+  createdAtPKT: string; 
 }
 
-const ReviewSchema = new Schema<IReview>(
+const ReviewSchema: Schema<IReview> = new Schema(
   {
-    book: { type: Schema.Types.ObjectId, ref: 'Book', required: true },
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    rating: { type: Number, required: true, min: 0, max: 5 },
-    message: { type: String, default: '' }
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    book: { type: Schema.Types.ObjectId, ref: "Book", required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    message: { type: String, trim: true },
+    createdAtPKT: { type: String }, 
   },
-  { timestamps: true ,
-      versionKey: false   }
+  { timestamps: true } 
 );
 
-// One review per user per book
-ReviewSchema.index({ book: 1, user: 1 }, { unique: true });
 
-export const ReviewModel = mongoose.model<IReview>('Review', ReviewSchema);
+ReviewSchema.pre<IReview>("save", function (next) {
+  const nowUTC = this.createdAt || new Date();
+
+  this.createdAtPKT = new Date(nowUTC).toLocaleString("en-PK", {
+    timeZone: "Asia/Karachi",
+    hour12: true,
+  });
+
+  next();
+});
+
+export const ReviewModel = mongoose.model<IReview>("Review", ReviewSchema);
