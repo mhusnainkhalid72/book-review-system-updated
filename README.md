@@ -9,7 +9,6 @@ The **Book Review System** is a modern full-stack application designed to provid
 
 - **User Authentication**: Secure login and registration via JWT tokens.
 - **Book Reviews**: Add, update, and delete reviews for books.
-- **Search Functionality**: Search books by title or author.
 - **Caching**: Redis caching to improve response times for frequently accessed data.
 - **API Endpoints**:
   - `POST /api/auth/register` - Register a new user.
@@ -24,7 +23,6 @@ The **Book Review System** is a modern full-stack application designed to provid
   - Node.js with Express.js
   - TypeScript for type safety
   - MongoDB for database storage
-  - JWT for authentication
   - Redis for caching frequently used data
 - **Containerization**: 
   - Docker & Docker Compose for building and running the app in isolated containers.
@@ -33,18 +31,18 @@ The **Book Review System** is a modern full-stack application designed to provid
 
 ### Dockerized Setup
 
-docker-compose build
-docker-compose up -d
+- docker-compose build
+- docker-compose up -d
 
 
 ## Development Setup (Without Docker) 
  
 
  ## Run locally
- npm install
- npm run dev 
+ - npm install
+ -npm run dev 
 
 
 ## Production Setup
-npm run build 
-npm run start 
+- npm run build 
+- npm run start 
