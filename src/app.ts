@@ -12,7 +12,7 @@ import { sessionActivity } from "./middlewares/sessionActivity";
 import { requireToken } from "./middlewares/requireToken"; // Custom token validation
 
 const app = express();
-
+app.use(morgan("dev"));
 // Use custom session token middleware (no express-session)
 app.use(sessionActivity);  // Track session activity on each request
 
@@ -27,7 +27,7 @@ app.use(cors());
 app.use(helmet());
 
 // HTTP request logging
-app.use(morgan("dev"));
+
 
 // API Routes
 app.use("/api", routes);

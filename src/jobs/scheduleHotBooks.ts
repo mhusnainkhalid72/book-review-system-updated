@@ -11,7 +11,7 @@ export async function scheduleHotBooks() {
     HOT_BOOKS_JOB,
     {}, // no payload; worker computes everything
     {
-      repeat: { pattern: '0 * * * *' }, // <-- FIX: BullMQ uses `pattern`
+      repeat: { pattern: '0 * * * *' }, 
       removeOnComplete: true,
       removeOnFail: true,
       jobId: `${HOT_BOOKS_JOB}-hourly`, // idempotent

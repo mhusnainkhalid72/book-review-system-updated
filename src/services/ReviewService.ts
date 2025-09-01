@@ -2,6 +2,8 @@ import { IReviewRepository } from '../repositories/interfaces/IReviewRepository'
 import { IBookRepository } from '../repositories/interfaces/IBookRepository';
 import { AppError } from '../error/AppError';
 import { Types } from 'mongoose';  // Import Types from mongoose for ObjectId casting
+import { ReviewModel } from '../databases/models/Review';
+import { notificationQueue, PUSH_JOB } from '../queues/notification.queue';
 
 export class ReviewService {
   constructor(private reviews: IReviewRepository, private books: IBookRepository) {}
@@ -28,7 +30,14 @@ export class ReviewService {
     // recalculate average rating
     const avg = await this.reviews.calcBookAverage(data.bookId);
     await this.books.updateAverageRating(data.bookId, avg);
-
+ await notificationQueue.add(
+      PUSH_JOB,
+      {
+        userId: book.user.toString(),
+        message: `Your book "${book.title}" got a new review!`
+      },
+      { delay: 5 * 60 * 1000 } // 5 minutes
+    );
     return review;
   }
 
@@ -37,12 +46,16 @@ export class ReviewService {
     if (!review) throw new AppError('Review not found', 404);
     return review;
   }
-async getByBookId(bookId: string) {
-  const reviews = await this.reviews.findByBookId(bookId);
-  if (!reviews || reviews.length === 0) throw new AppError('No reviews for this book', 404);
-  return reviews;
-}
-
+  async getByBookId(
+    bookId: string,
+    sort: 'recent' | 'popular' = 'recent',
+    page = 1,
+    limit = 20
+  ) {
+    const docs = await this.reviews.findByBookId(bookId, sort, page, limit);
+    if (!docs || docs.length === 0) throw new AppError('No reviews for this book', 404);
+    return docs;
+  }
   async update(userId: string, id: string, data: Partial<{ rating: number; message?: string }>) {
     const review = await this.reviews.findById(id);
     if (!review) throw new AppError('Review not found', 404);
@@ -57,15 +70,19 @@ async getByBookId(bookId: string) {
     return updated!;
   }
 
-  async delete(userId: string, id: string) {
+  async delete(userId: string, id: string): Promise<{ bookId: string }> {
     const review = await this.reviews.findById(id);
     if (!review) throw new AppError('Review not found', 404);
     if (review.user.toString() !== userId) throw new AppError('Forbidden', 403);
 
+    const bookId = review.book.toString();
+
     await this.reviews.deleteById(id);
 
-    // recalculate average rating
-    const avg = await this.reviews.calcBookAverage(review.book.toString());
-    await this.books.updateAverageRating(review.book.toString(), avg);
+    const avg = await this.reviews.calcBookAverage(bookId);
+    await this.books.updateAverageRating(bookId, avg);
+
+    return { bookId };
   }
+  
 }

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { BookService } from "../services/BookService";
-import RedisClient from "../lib/RedisClient";
 import { Types } from "mongoose";
 
 
@@ -9,6 +8,11 @@ import MineBooksResponseDto from "../dto/responses/book/MineBooksResponseDto";
 import CreateBookResponseDto from "../dto/responses/book/CreateBookResponseDto";
 import UpdateBookResponseDto from "../dto/responses/book/UpdateBookResponseDto";
 import DeleteBookResponseDto from "../dto/responses/book/DeleteBookResponseDto";
+
+import { RedisCache } from "../lib/RedisCache";
+import { CacheKeys } from "../cache/cache.keys";
+import { TTL } from "../cache/cache.ttl";
+import { withJitter } from "../cache/cache.jitter";
 
 type SortKey = "recent" | "high" | "low";
 
@@ -19,26 +23,19 @@ export class BookController {
   public async list(req: Request, res: Response) {
     try {
       const sort: SortKey = (req.query.sort as SortKey) || "recent";
+      const key = CacheKeys.booksList(sort);
 
-      const redis = RedisClient.getInstance();
-      const cacheKey = `books:${sort}`;
+      const result = await RedisCache.wrap(
+        key,
+        withJitter(TTL.BOOK_LIST),
+        () => this.books.listAll(sort)
+      );
 
-      // try cache first
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        return new ListBooksResponseDto(
-          res,
-          true,
-          "Books fetched successfully (from cache)",
-          JSON.parse(cached)
-        );
-      }
-
-   
-      const result = await this.books.listAll(sort);
-      await redis.set(cacheKey, JSON.stringify(result), "EX", 60);
-
-      return new ListBooksResponseDto( res, true, "Books fetched successfully",result
+      return new ListBooksResponseDto(
+        res,
+        true,
+        "Books fetched successfully",
+        result
       );
     } catch (err: any) {
       return new ListBooksResponseDto(
@@ -48,7 +45,6 @@ export class BookController {
       );
     }
   }
-
  public async mine(_req: Request, res: Response) {
   try {
     console.log("user in res.locals:", res.locals.user); // DEBUG
@@ -87,9 +83,8 @@ export class BookController {
 
       const created = await this.books.create(user.id, dto);
 
-   
-      const redis = RedisClient.getInstance();
-      await redis.del("books:recent", "books:high", "books:low");
+         await RedisCache.del(CacheKeys.patterns.allBooksLists());
+      await RedisCache.del(CacheKeys.patterns.hotBooksAll());
 
       return new CreateBookResponseDto(
         res,
@@ -114,9 +109,8 @@ export class BookController {
       const bookId = req.params.id;
 
       const updated = await this.books.update(user.id, bookId, dto);
-
-      const redis = RedisClient.getInstance();
-      await redis.del("books:recent", "books:high", "books:low");
+      await RedisCache.del(CacheKeys.patterns.allBooksLists());
+      await RedisCache.del(CacheKeys.patterns.hotBooksAll());
 
       return new UpdateBookResponseDto(
         res,
@@ -141,9 +135,10 @@ export class BookController {
 
       await this.books.delete(user.id, bookId);
 
-      const redis = RedisClient.getInstance();
-      await redis.del("books:recent", "books:high", "books:low");
+       await RedisCache.del(CacheKeys.patterns.allBooksLists());
+      await RedisCache.del(CacheKeys.patterns.hotBooksAll());
 
+     
       return new DeleteBookResponseDto(res, true, "Book deleted successfully");
     } catch (err: any) {
       return new DeleteBookResponseDto(

@@ -7,6 +7,12 @@ export interface IReviewRepository {
   deleteById(id: string): Promise<void>;
   findUserReviewForBook(userId: string, bookId: string): Promise<IReview | null>;
   calcBookAverage(bookId: string): Promise<number>;
-  findByBookId(bookId: string): Promise<IReview[]>;
 
+  // ✅ unified signature with pagination + sorting
+  findByBookId(
+    bookId: string,
+    sort: "recent" | "popular",
+    page: number,
+    limit: number
+  ): Promise<IReview[]>;
 }

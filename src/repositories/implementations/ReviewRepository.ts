@@ -11,12 +11,24 @@ export class ReviewRepository implements IReviewRepository {
   async findById(id: string): Promise<IReview | null> {
     return await ReviewModel.findById(id);
   }
-async findByBookId(bookId: string): Promise<IReview[]> {
-  if (!Types.ObjectId.isValid(bookId)) {
-    throw new AppError('Invalid bookId format', 400);
+ async findByBookId(
+    bookId: string,
+    sort: 'recent' | 'popular',
+    page: number,
+    limit: number
+  ): Promise<IReview[]> {
+    if (!Types.ObjectId.isValid(bookId)) {
+      throw new AppError('Invalid bookId format', 400);
+    }
+    const q = ReviewModel.find({ book: new Types.ObjectId(bookId) });
+    if (sort === 'popular') {
+      q.sort({ rating: -1, createdAt: -1 });
+    } else {
+      q.sort({ createdAt: -1 });
+    }
+    return await q.skip((page - 1) * limit).limit(limit).lean();
   }
-  return await ReviewModel.find({ book: new Types.ObjectId(bookId) });
-}
+
 
   async updateById(id: string, data: Partial<IReview>): Promise<IReview | null> {
     return await ReviewModel.findByIdAndUpdate(id, data, { new: true });

@@ -9,6 +9,7 @@ import { CreateReviewDTOSchema } from '../dto/request/review/CreateReviewDTO';
 import { UpdateReviewDTOSchema } from '../dto/request/review/UpdateReviewDTO';
 import { asyncHandler } from '../lib/asyncHandler';
 import { requireToken } from '../middlewares/requireToken';
+import { rateLimiter } from '../middlewares/rateLimiter';
 
 const router = Router();
 
@@ -17,7 +18,14 @@ const bookRepo = new BookRepository();
 const service = new ReviewService(reviewRepo, bookRepo);
 const controller = new ReviewController(service);
 
-router.post('/', requireToken, validate(CreateReviewDTOSchema), asyncHandler(controller.create.bind(controller)));
+const reviewRateLimit = rateLimiter({
+  keyPrefix: 'reviews',
+  limit: Number(process.env.REVIEW_RATE_LIMIT || 2),
+  windowSeconds: Number(process.env.REVIEW_RATE_LIMIT_WINDOW || 600)
+});
+
+
+router.post('/', requireToken, reviewRateLimit, validate(CreateReviewDTOSchema), asyncHandler(controller.create.bind(controller)));
 router.get('/book/:bookId', asyncHandler(controller.getByBookId.bind(controller)));
 router.get('/:id', asyncHandler(controller.getById.bind(controller)));
 router.put('/:id', requireToken, validate(UpdateReviewDTOSchema), asyncHandler(controller.update.bind(controller)));
