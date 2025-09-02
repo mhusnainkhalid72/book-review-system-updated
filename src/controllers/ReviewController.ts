@@ -24,13 +24,19 @@ export class ReviewController {
     try {
       const user = res.locals.user;
       const dto = res.locals.validated;
-      const review = await this.reviews.create(user.id, dto);
 
-         await RedisCache.del(CacheKeys.patterns.bookAllReviews(review.book.toString()));
-      await RedisCache.del(CacheKeys.patterns.allBooksLists());
-      await RedisCache.del(CacheKeys.patterns.hotBooksAll());
-      // invalidate book lists because average rating changes
-       
+     if (!user?.id) throw new Error('Authenticated user not in res.locals'); // [ADDED]
+     if (!dto?.bookId) throw new Error('Validated DTO missing bookId');      // [ADDED]
+      
+     const review = await this.reviews.create(user.id, dto);
+
+    try {
+        await RedisCache.del(CacheKeys.patterns.bookAllReviews(review.book.toString()));
+        await RedisCache.del(CacheKeys.patterns.allBooksLists());
+        await RedisCache.del(CacheKeys.patterns.hotBooksAll());
+      } catch (cacheErr: any) {
+        console.error('[ReviewController.create] cache invalidation failed', { message: cacheErr?.message });
+      }
 
       return new CreateReviewResponseDto(res, true, "Review created successfully", review);
     } catch (err: any) {
@@ -77,10 +83,14 @@ export class ReviewController {
       const user = res.locals.user;
       const dto = res.locals.validated;
       const review = await this.reviews.update(user.id, req.params.id, dto);
- await RedisCache.del(CacheKeys.patterns.bookAllReviews(review.book.toString()));
-      await RedisCache.del(CacheKeys.patterns.allBooksLists());
-      await RedisCache.del(CacheKeys.patterns.hotBooksAll());
 
+ try {
+        await RedisCache.del(CacheKeys.patterns.bookAllReviews(review.book.toString()));
+        await RedisCache.del(CacheKeys.patterns.allBooksLists());
+        await RedisCache.del(CacheKeys.patterns.hotBooksAll());
+      } catch (cacheErr: any) {
+        console.error('[ReviewController.update] cache invalidation failed', { message: cacheErr?.message });
+      }
       return new UpdateReviewResponseDto(res, true, "Review updated successfully", review);
     } catch (err: any) {
       return new UpdateReviewResponseDto(res, false, err.message || "Failed to update review");
