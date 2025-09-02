@@ -32,6 +32,8 @@ The **Book Review System** is a modern full-stack application designed to provid
 ### Dockerized Setup
 
 - docker-compose build
+
+
 - docker-compose up -d
 
 
