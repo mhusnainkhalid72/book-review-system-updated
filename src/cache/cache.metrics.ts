@@ -1,5 +1,5 @@
 // FILE: src/cache/cache.metrics.ts
-// [NEW] Tiny metrics helper (console for now; can pipe to logger later).
+
 type MetricEvent = 'hit' | 'miss' | 'set' | 'del' | 'error';
 
 export function cacheMetric(ev: MetricEvent, key: string, extra?: Record<string, any>) {

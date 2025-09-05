@@ -6,7 +6,6 @@ import { CacheKeys } from "../cache/cache.keys";
 import { TTL } from "../cache/cache.ttl";
 import { withJitter } from "../cache/cache.jitter";
 
-// Import DTOs
 import CreateReviewResponseDto from "../dto/responses/review/CreateReviewResponseDto";
 import GetReviewByIdResponseDto from "../dto/responses/review/GetReviewByIdResponseDto";
 import ListReviewsByBookResponseDto from "../dto/responses/review/ListReviewsByBookResponseDto";
@@ -25,8 +24,8 @@ export class ReviewController {
       const user = res.locals.user;
       const dto = res.locals.validated;
 
-     if (!user?.id) throw new Error('Authenticated user not in res.locals'); // [ADDED]
-     if (!dto?.bookId) throw new Error('Validated DTO missing bookId');      // [ADDED]
+     if (!user?.id) throw new Error('Authenticated user not in res.locals') // [ADDED]
+     if (!dto?.bookId) throw new Error('Validated DTO missing bookId');     
       
      const review = await this.reviews.create(user.id, dto);
 

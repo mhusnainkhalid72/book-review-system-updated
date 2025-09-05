@@ -12,6 +12,7 @@ export interface ISession extends Document {
   createdAt: Date;
   expiresAt?: Date | null;
   revoked: boolean;
+  extraPermissions?: string[];
   isOnline: boolean;
 }
 
@@ -25,6 +26,7 @@ const SessionSchema = new Schema<ISession>(
     lastActive: { type: Date, required: true, default: () => new Date() },
     expiresAt: { type: Date, default: null },
     revoked: { type: Boolean, required: true, default: false },
+      extraPermissions: { type: [String], default: [] }
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

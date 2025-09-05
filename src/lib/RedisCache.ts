@@ -1,5 +1,5 @@
 // FILE: src/lib/RedisCache.ts
-// [NEW] Central cache helper (wraps RedisClient with JSON, TTL, metrics, patterns).
+
 import RedisClient from './RedisClient';
 import { cacheMetric } from '../cache/cache.metrics';
 
@@ -13,7 +13,7 @@ export class RedisCache {
       return JSON.parse(raw) as T;
     } catch (err: any) {
       cacheMetric('error', key, { msg: err?.message });
-      return null; // fail-open
+      return null; 
     }
   }
 
@@ -32,7 +32,7 @@ export class RedisCache {
     }
   }
 
-  // Supports both exact key and pattern via SCAN
+ 
   static async del(keyOrPattern: string): Promise<void> {
     try {
       const client = RedisClient.getInstance();
@@ -51,7 +51,7 @@ export class RedisCache {
     }
   }
 
-  // Convenience: cache-aside wrapper
+
   static async wrap<T>(
     key: string,
     ttlSeconds: number,

@@ -1,5 +1,5 @@
 // FILE: src/cache/cache.keys.ts
-// [NEW] All cache keys in one place (safe & consistent).
+
 export const CacheKeys = {
   booksList: (sort: 'recent' | 'high' | 'low') => `books:${sort}`,
 

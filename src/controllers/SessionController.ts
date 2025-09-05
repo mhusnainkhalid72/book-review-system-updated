@@ -13,10 +13,9 @@ export class SessionController {
 
 public async revoke(req: Request, res: Response) {
     try {
-      const user = res.locals.user;  // Get user from session
-      const sessionId = req.params.id; // Get sessionId from URL parameters
+      const user = res.locals.user;  
+      const sessionId = req.params.id; 
 
-      // Pass both userId and sessionId to the revoke method
       await this.sessions.revoke(user.id, sessionId);
 
       res.status(200).json({ message: "Session revoked" });

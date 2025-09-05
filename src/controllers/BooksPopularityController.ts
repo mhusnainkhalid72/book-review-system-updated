@@ -1,5 +1,5 @@
 // FILE: src/controllers/BooksPopularityController.ts
-// [NEW] Controller for GET /books/hot (with Redis caching).
+
 import { Request, Response } from 'express';
 import { BooksPopularityService } from '../services/BooksPopularityService';
 import { RedisCache } from '../lib/RedisCache';

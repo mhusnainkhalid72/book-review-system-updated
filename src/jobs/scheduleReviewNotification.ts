@@ -5,8 +5,7 @@ export async function scheduleReviewNotification(userId: string, bookId: string,
   try {
     await notificationQueue.add(
       PUSH_JOB,
-      { userId, message: `Your book got a new review by ${reviewerName}!`, bookId }, // [CHANGED] carry bookId for context if needed
-      { delay: 5 * 60 * 1000, removeOnComplete: true, removeOnFail: 50 } // [CHANGED]
+      { userId, message: `Your book got a new review by ${reviewerName}!`, bookId },
     );
   } catch (err: any) {
     console.error('[scheduleReviewNotification] failed to enqueue', { message: err?.message });
