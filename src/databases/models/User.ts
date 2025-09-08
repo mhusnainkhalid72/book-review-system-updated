@@ -11,6 +11,8 @@ export interface IUser extends Document {
   updatedAt: Date;
   deviceToken?: string;
    extraPermissions?: string[]; 
+   refreshTokens: string[]; 
+   
 }
 
 const UserSchema = new Schema<IUser>(
@@ -20,7 +22,8 @@ const UserSchema = new Schema<IUser>(
     password: { type: String, required: true },
      deviceToken: { type: String },
       role: { type: Schema.Types.ObjectId, ref: "Role", default: null }, 
-       extraPermissions: { type: [String], default: [] }
+       extraPermissions: { type: [String], default: [] },
+        refreshTokens: { type: [String], default: [] }
   },
   { timestamps: true }
 );

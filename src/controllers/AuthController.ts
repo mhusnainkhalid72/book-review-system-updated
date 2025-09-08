@@ -8,7 +8,7 @@ import RegisterResponseDto from "../dto/responses/auth/RegisterResponseDto";
 import { AppError } from "../error/AppError"; 
 import { SessionModel } from "../databases/models/Session";
 import { RoleModel } from "../databases/models/Role";
-
+import jwt from "jsonwebtoken";
 export class AuthController {
   constructor(private auth: AuthService, private sessions: SessionService) {}
 
@@ -23,9 +23,18 @@ export class AuthController {
 
     const newUser = await UserModel.create({ email, password, name });
     const { token, session } = await this.sessions.createForLogin(newUser._id.toString(), req);
+    const refreshToken = jwt.sign(
+      { userId: newUser._id },
+      process.env.JWT_REFRESH_SECRET || "refresh_secret",
+      { expiresIn: "7d" }
+    );
+
+    newUser.refreshTokens.push(refreshToken);
+    await newUser.save();
+
 
     res.setHeader("Authorization", `Bearer ${token}`);
-    res.status(201).json({ message: "User registered successfully", token, user: newUser });
+    res.status(201).json({ message: "User registered successfully", token,refreshToken,  user: newUser });
   }
 
   
@@ -39,9 +48,18 @@ export class AuthController {
     }
 
     const { token, session } = await this.sessions.createForLogin(user._id.toString(), req);
+ const refreshToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_REFRESH_SECRET || "refresh_secret",
+      { expiresIn: "7d" }
+    );
+
+    user.refreshTokens.push(refreshToken);
+    await user.save();
 
     res.setHeader("Authorization", `Bearer ${token}`);
-    res.status(200).json({ token, user });
+    res.status(200).json({  accessToken: token,
+      refreshToken, user });
   }
 
   // Handle user logout
@@ -64,7 +82,12 @@ public async logout(req: Request, res: Response) {
 
      
       await this.sessions.revoke(userId, session._id.toString());  
-
+ const refreshToken = req.body.refreshToken;
+      if (refreshToken) {
+        await UserModel.updateOne(
+          { _id: userId },
+          { $pull: { refreshTokens: refreshToken } }
+        );}
       res.status(200).json({ message: "Logged out successfully" });
     } catch (err: any) {
       return res.status(500).json({ message: "Error logging out", error: err.message });

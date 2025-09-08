@@ -1,7 +1,4 @@
-// src/middlewares/authorization.ts
 import { Request, Response, NextFunction } from "express";
-import { UserModel } from "../databases/models/User";
-import { RoleModel } from "../databases/models/Role";
 import { anyPermissionMatches } from "../lib/RBAC";
 import { AppError } from "../error/AppError";
 
@@ -16,24 +13,25 @@ export async function userHasPermission(
 ): Promise<boolean> {
   const sessionExtra: string[] = (req.res as any)?.locals?.sessionExtraPermissions || [];
 
-  
+  // 🔹 1. Check extra session permissions
   if (hasAnyPermission(sessionExtra, [requiredPermission, '*'])) return true;
 
+  // 🔹 2. Get user from locals (already populated in requireToken.ts)
   const userRef = (req.res as any)?.locals?.user;
   if (!userRef || !userRef.id) return false;
 
-  const user = await UserModel.findById(userRef.id).lean();
-  if (!user || !user.role) return false;
+  const rolePermissions: string[] = userRef.permissions || [];
 
-  const role = await RoleModel.findById(user.role).lean();
-  if (!role || !role.permissions) return false;
+  // 🔹 3. Admin "*" shortcut
+  if (hasAnyPermission(rolePermissions, [requiredPermission, '*'])) return true;
 
-
-  if (hasAnyPermission(role.permissions, [requiredPermission, '*'])) return true;
-
-
-  if (requiredPermission.endsWith('.own') && resourceOwnerId && resourceOwnerId === userRef.id) {
-    if (hasAnyPermission(role.permissions, [requiredPermission])) return true;
+  // 🔹 4. Own-resource check
+  if (
+    requiredPermission.endsWith('.own') &&
+    resourceOwnerId &&
+    resourceOwnerId === userRef.id
+  ) {
+    if (hasAnyPermission(rolePermissions, [requiredPermission])) return true;
   }
 
   return false;
@@ -52,7 +50,14 @@ export function requirePermission(
             ? await (resourceOwnerIdGetter as any)(req)
             : resourceOwnerIdGetter;
         if (maybe) ownerId = maybe as string;
+
+        
       }
+     console.log("PERM DEBUG ->", {
+        required: requiredPermission,
+        user: res.locals?.user,                          // set by requireToken
+        sessionExtra: res.locals?.sessionExtraPermissions
+      });
 
       const ok = await userHasPermission(req, requiredPermission, ownerId);
       if (ok) return next();

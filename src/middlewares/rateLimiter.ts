@@ -3,9 +3,9 @@ import { Request, Response, NextFunction } from 'express';
 import RedisClient from '../lib/RedisClient';
 
 interface RateLimitOptions {
-  keyPrefix: string;   // e.g., "reviews"
-  limit: number;       // e.g., 5
-  windowSeconds: number; // e.g., 3600
+  keyPrefix: string; 
+  limit: number;       
+  windowSeconds: number; 
 }
 
 export const rateLimiter = ({ keyPrefix, limit, windowSeconds }: RateLimitOptions) => {
@@ -21,7 +21,7 @@ export const rateLimiter = ({ keyPrefix, limit, windowSeconds }: RateLimitOption
       const current = await redis.incr(key);
 
       if (current === 1) {
-        // First time, set TTL
+      
         await redis.expire(key, windowSeconds);
       }
 

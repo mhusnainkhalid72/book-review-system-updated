@@ -9,7 +9,8 @@ import { errorHandler } from "./middlewares/errorHandler";
 
 // Session management (custom, without cookies or express-session)
 import { sessionActivity } from "./middlewares/sessionActivity"; 
-import { requireToken } from "./middlewares/requireToken"; // Custom token validation
+import { requireToken } from "./middlewares/requireToken"; 
+import adminRoutes from "./routes/adminRoutes";
 
 const app = express();
 app.use(morgan("dev"));
@@ -31,6 +32,7 @@ app.use(helmet());
 
 // API Routes
 app.use("/api", routes);
+app.use("/api/admin", adminRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

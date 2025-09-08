@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
 import { connectMongo } from "../databases";
@@ -8,30 +8,36 @@ import { UserModel } from "../databases/models/User";
 async function seed() {
   try {
     // 🔹 Connect to MongoDB
-    await connectMongo(process.env.MONGO_URI || 'mongodb://localhost:27017/book_review_system');
+    await connectMongo(
+      process.env.MONGO_URI || "mongodb://localhost:27017/book_review_system"
+    );
     console.log("Connected to MongoDB");
 
     // 🔹 Default permission sets
-    const adminPerms = ['*']; // full access for admin
+    const adminPerms = ["*"]; // full access for admin
+
     const moderatorPerms = [
-      'books.create',
-      'books.read.any',
-      'books.update.any',
-      'books.delete.any',
-      'users.read.any'
+      "books.create",
+      "books.read.any",
+      "books.update.any",
+      "books.delete.any",
+      "users.read.any",
+      // 🔑 added so moderators can also assign roles if desired
+      "roles.assign",
     ];
+
     const userPerms = [
-      'books.create',
-      'books.read.own',
-      'books.update.own',
-      'books.delete.own',
-      'books.list'
+      "books.create",
+      "books.read.own",
+      "books.update.own",
+      "books.delete.own",
+      "books.list",
     ];
 
     const roles = [
-      { name: 'admin', permissions: adminPerms },
-      { name: 'moderator', permissions: moderatorPerms },
-      { name: 'user', permissions: userPerms }
+      { name: "admin", permissions: adminPerms },
+      { name: "moderator", permissions: moderatorPerms },
+      { name: "user", permissions: userPerms },
     ];
 
     // 🔹 Seed roles
@@ -41,24 +47,27 @@ async function seed() {
         await RoleModel.create(r);
         console.log(`Created role: ${r.name}`);
       } else {
-        console.log(`Role exists: ${r.name}, skipping creation`);
+        // ✅ keep roles updated if permissions changed
+        existing.permissions = r.permissions;
+        await existing.save();
+        console.log(`Updated role: ${r.name}`);
       }
     }
 
     // 🔹 Create admin user if not exists
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    const adminName = process.env.ADMIN_NAME || 'Admin';
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const adminName = process.env.ADMIN_NAME || "Admin";
 
     let admin = await UserModel.findOne({ email: adminEmail });
-    const adminRole = await RoleModel.findOne({ name: 'admin' });
+    const adminRole = await RoleModel.findOne({ name: "admin" });
 
     if (!admin) {
       admin = await UserModel.create({
         name: adminName,
         email: adminEmail,
         password: adminPassword,
-        role: adminRole ? adminRole._id : null
+        role: adminRole ? adminRole._id : null,
       });
       console.log(`Created admin user: ${admin.email}`);
     } else {
@@ -74,7 +83,6 @@ async function seed() {
 
     console.log("Seeding complete ✅");
     process.exit(0);
-
   } catch (err: any) {
     console.error("Seeding failed ❌:", err);
     process.exit(1);

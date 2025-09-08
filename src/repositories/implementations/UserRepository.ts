@@ -13,4 +13,8 @@ export class UserRepository implements IUserRepository {
   async findById(id: string): Promise<IUser | null> {
     return await UserModel.findById(id);
   }
+  
+  async findAllWithRoles(): Promise<IUser[]> { 
+    return await UserModel.find().populate("role", "name permissions");
+  }
 }
