@@ -23,36 +23,32 @@ type SortKey = "recent" | "high" | "low";
 export class BookController {
   constructor(private books: BookService) {}
 
-  async listBooks(req: Request, res: Response) {
-    try {
-      const { search } = req.query;
-      const rawSort = req.query.sort as string | undefined;
+ async listBooks(req: Request, res: Response) {
+  try {
+    const { search, cursor, limit } = req.query;
+    const rawSort = req.query.sort as string | undefined;
 
-      // ✅ Keep sort strictly typed
-      let sortKey: SortKey = 'recent';
-      if (rawSort === 'high' || rawSort === 'low' || rawSort === 'recent') {
-        sortKey = rawSort;
-      }
-
-    
-      const cacheKey = `${CacheKeys.booksList(sortKey)}:search=${search || ""}`;
-
-   
-     const result = await RedisCache.wrap(
-      cacheKey,
-      withJitter(TTL.BOOK_LIST),
-      () =>
-        this.books.listAll(
-          sortKey,
-          search ? (search as string) : undefined
-        )
-    );
-      res.json(result);
-    } catch (err) {
-      console.error('Error in listBooks:', err);
-      res.status(500).json({ error: 'Failed to fetch books' });
+    let sortKey: "recent" | "high" | "low" = "recent";
+    if (rawSort === "high" || rawSort === "low" || rawSort === "recent") {
+      sortKey = rawSort;
     }
+
+    const limitNumber: number = limit ? parseInt(limit as string, 10) : 10;
+
+    // 🔹 call service properly
+    const {  books: bookList, nextCursor } = await this.books.listAll(
+      sortKey,
+      search ? (search as string) : "",
+      cursor ? (cursor as string) : undefined,
+      limitNumber
+    );
+
+    return res.json({ books: bookList, nextCursor });
+  } catch (err) {
+    console.error("Error in listBooks:", err);
+    return res.status(500).json({ error: "Failed to fetch books" });
   }
+}
 
   
 

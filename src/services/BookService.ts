@@ -59,10 +59,14 @@ export class BookService {
   }
 
 
-  async listAll(sort: "recent" | "high" | "low", search: string = "") {
-    return await this.books.listAll(sort, search);
-  }
-
+ async listAll(
+  sort: "recent" | "high" | "low",
+  search: string = "",
+  cursor?: string,
+  limit: number = 10
+) {
+  return await this.books.listAll(sort, search, cursor, limit);
+}
   async updateAverage(bookId: string, avg: number) {
     await this.books.updateAverageRating(bookId, avg);
   }

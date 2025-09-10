@@ -22,30 +22,66 @@ export class BookRepository implements IBookRepository {
     await BookModel.findByIdAndDelete(id);
   }
 
+  // Cursor-based pagination + sorting + search
   async listAll(
     sort: "recent" | "high" | "low",
-    search: string = ""
-  ): Promise<IBook[]> {
+    search: string = "",
+    cursor?: string,
+    limit: number = 10
+  ): Promise<{ books: IBook[]; nextCursor?: string }> {
     const query: any = {};
 
-
+    // 🔍 Search by title
     if (search && search.trim() !== "") {
       query.title = { $regex: search, $options: "i" };
+    }
 
+    // Cursor logic
+    if (cursor) {
+      const lastBook = await BookModel.findById(cursor).lean();
+      if (lastBook) {
+        if (sort === "recent") {
+          query.createdAt = { $lt: lastBook.createdAt };
+        } else if (sort === "high") {
+          query.$or = [
+            { averageRating: { $lt: lastBook.averageRating } },
+            {
+              averageRating: lastBook.averageRating,
+              createdAt: { $lt: lastBook.createdAt },
+            },
+          ];
+        } else if (sort === "low") {
+          query.$or = [
+            { averageRating: { $gt: lastBook.averageRating } },
+            {
+              averageRating: lastBook.averageRating,
+              createdAt: { $lt: lastBook.createdAt },
+            },
+          ];
+        }
+      }
     }
 
     // Sorting logic
-    let sortStage: { [key: string]: 1 | -1 } = {};
+    let sortStage: any = {};
+    if (sort === "high") sortStage = { averageRating: -1, createdAt: -1 };
+    else if (sort === "low") sortStage = { averageRating: 1, createdAt: -1 };
+    else sortStage = { createdAt: -1 };
 
-    if (sort === "high") {
-      sortStage = { averageRating: -1, createdAt: -1 };
-    } else if (sort === "low") {
-      sortStage = { averageRating: 1, createdAt: -1 };
-    } else {
-      sortStage = { createdAt: -1 };
+    //  Fetch one extra to check for next cursor
+    const books = await BookModel.find(query)
+      .sort(sortStage)
+      .limit(limit + 1)
+      .lean();
+
+    let nextCursor: string | undefined = undefined;
+    if (books.length > limit) {
+      const nextBook = books.pop(); // remove extra item
+      nextCursor = nextBook!._id.toString();
     }
 
-    return await BookModel.find(query).sort(sortStage).lean();
+    //  Return object with books + nextCursor
+    return { books, nextCursor };
   }
 
   async updateAverageRating(bookId: string, avg: number): Promise<void> {
