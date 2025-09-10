@@ -21,7 +21,7 @@ const controller = new BookController(bookService);
 const hotService = new BooksPopularityService();
 const hotController = new BooksPopularityController(hotService);
 
-router.get('/', asyncHandler(controller.list.bind(controller)));
+router.get('/', asyncHandler(controller.listBooks.bind(controller)));
 router.get('/mine', requireToken, asyncHandler(controller.mine.bind(controller)));
 router.post('/', requireToken, validate(CreateBookDTOSchema), asyncHandler(controller.create.bind(controller)));
 router.put('/:id', requireToken, requirePermission('books.update.any', async (req) => {

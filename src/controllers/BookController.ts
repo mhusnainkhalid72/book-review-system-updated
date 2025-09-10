@@ -17,43 +17,48 @@ import { BookModel } from "../databases/models/Book";
 import { RoleModel } from "../databases/models/Role";
 import { UserModel } from "../databases/models/User";
 import { anyPermissionMatches } from "../lib/RBAC";
-import { dot } from "node:test/reporters";
 
 type SortKey = "recent" | "high" | "low";
 
 export class BookController {
   constructor(private books: BookService) {}
 
-  // LIST BOOKS - anyone can list
-  public async list(req: Request, res: Response) {
+  async listBooks(req: Request, res: Response) {
     try {
-      const sort: SortKey = (req.query.sort as SortKey) || "recent";
-      const key = CacheKeys.booksList(sort);
+      const { search } = req.query;
+      const rawSort = req.query.sort as string | undefined;
 
-      const result = await RedisCache.wrap(
-        key,
-        withJitter(TTL.BOOK_LIST),
-        () => this.books.listAll(sort)
-      );
+      // ✅ Keep sort strictly typed
+      let sortKey: SortKey = 'recent';
+      if (rawSort === 'high' || rawSort === 'low' || rawSort === 'recent') {
+        sortKey = rawSort;
+      }
 
-      return new ListBooksResponseDto(
-        res,
-        true,
-        "Books fetched successfully",
-        result
-      );
-    } catch (err: any) {
-      return new ListBooksResponseDto(res, false, err.message || "Failed to fetch books");
+    
+      const cacheKey = `${CacheKeys.booksList(sortKey)}:search=${search || ""}`;
+
+   
+     const result = await RedisCache.wrap(
+      cacheKey,
+      withJitter(TTL.BOOK_LIST),
+      () =>
+        this.books.listAll(
+          sortKey,
+          search ? (search as string) : undefined
+        )
+    );
+      res.json(result);
+    } catch (err) {
+      console.error('Error in listBooks:', err);
+      res.status(500).json({ error: 'Failed to fetch books' });
     }
   }
 
   
+
   public async mine(req: Request, res: Response) {
     try {
-      console.log("user in res.locals:", res.locals.user); 
       const user = res.locals.user;
-
-      // handle both _id and id
       const userId = user._id
         ? user._id.toString()
         : new Types.ObjectId(user.id).toString();
@@ -75,15 +80,13 @@ export class BookController {
     }
   }
 
-  // CREATE BOOK - users can create their own
   public async create(req: Request, res: Response) {
     try {
       const user = res.locals.user;
-      const dto = res.locals.validated; // validated data from middleware
+      const dto = res.locals.validated;
 
       const created = await this.books.create(user.id, dto);
 
-      // 🔹 Clear caches after creation
       await RedisCache.del(CacheKeys.patterns.allBooksLists());
       await RedisCache.del(CacheKeys.patterns.hotBooksAll());
 
@@ -102,7 +105,6 @@ export class BookController {
     }
   }
 
-
   public async update(req: Request, res: Response) {
     try {
       const userRef = res.locals.user;
@@ -114,7 +116,6 @@ export class BookController {
 
       const isOwner = book.user.toString() === userRef.id;
 
-     
       const userDoc = await UserModel.findById(userRef.id).lean();
       const role = userDoc?.role ? await RoleModel.findById(userDoc.role).lean() : null;
       const userPermissions = [
@@ -124,8 +125,8 @@ export class BookController {
 
       if (!isOwner) {
         if (
-          !anyPermissionMatches(userPermissions, 'books.update.any') &&
-          !anyPermissionMatches(userPermissions, '*')
+          !anyPermissionMatches(userPermissions, "books.update.any") &&
+          !anyPermissionMatches(userPermissions, "*")
         ) {
           return new UpdateBookResponseDto(
             res,
@@ -142,7 +143,6 @@ export class BookController {
         userPermissions
       );
 
-     
       await RedisCache.del(CacheKeys.patterns.allBooksLists());
       await RedisCache.del(CacheKeys.patterns.hotBooksAll());
 
@@ -161,11 +161,9 @@ export class BookController {
     }
   }
 
-  
   public async remove(req: Request, res: Response) {
     try {
       const userRef = res.locals.user;
-     
       const bookId = req.params.id;
 
       const book = await BookModel.findById(bookId).lean();
@@ -173,7 +171,6 @@ export class BookController {
 
       const isOwner = book.user.toString() === userRef.id;
 
-     
       const userDoc = await UserModel.findById(userRef.id).lean();
       const role = userDoc?.role ? await RoleModel.findById(userDoc.role).lean() : null;
       const userPermissions = [
@@ -183,8 +180,8 @@ export class BookController {
 
       if (!isOwner) {
         if (
-          !anyPermissionMatches(userPermissions, 'books.delete.any') &&
-          !anyPermissionMatches(userPermissions, '*')
+          !anyPermissionMatches(userPermissions, "books.delete.any") &&
+          !anyPermissionMatches(userPermissions, "*")
         ) {
           return new DeleteBookResponseDto(
             res,
@@ -194,16 +191,15 @@ export class BookController {
         }
       }
 
-     const updated = await this.books.delete(userRef.id, bookId,  userPermissions);
-      
+      await this.books.delete(userRef.id, bookId, userPermissions);
+
       await RedisCache.del(CacheKeys.patterns.allBooksLists());
       await RedisCache.del(CacheKeys.patterns.hotBooksAll());
 
       return new DeleteBookResponseDto(
         res,
         true,
-        "Book deleted successfully",
-      
+        "Book deleted successfully"
       );
     } catch (err: any) {
       return new DeleteBookResponseDto(

@@ -6,7 +6,6 @@ export interface IBookRepository {
   findByOwner(userId: string): Promise<IBook[]>;
   updateById(id: string, data: Partial<IBook>): Promise<IBook | null>;
   deleteById(id: string): Promise<void>;
-  listAll(sort: 'recent' | 'high' | 'low'): Promise<IBook[]>;
+  listAll(sort: "recent" | "high" | "low", search?: string): Promise<IBook[]>; 
   updateAverageRating(bookId: string, avg: number): Promise<void>;
-  
 }

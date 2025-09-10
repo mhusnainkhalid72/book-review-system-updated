@@ -1,5 +1,5 @@
-import { IBook, BookModel } from '../../databases/models/Book';
-import { IBookRepository } from '../interfaces/IBookRepository';
+import { IBook, BookModel } from "../../databases/models/Book";
+import { IBookRepository } from "../interfaces/IBookRepository";
 
 export class BookRepository implements IBookRepository {
   async create(data: Partial<IBook>): Promise<IBook> {
@@ -22,19 +22,30 @@ export class BookRepository implements IBookRepository {
     await BookModel.findByIdAndDelete(id);
   }
 
-  async listAll(sort: 'recent' | 'high' | 'low'): Promise<IBook[]> {
-    // Adjust the sorting logic to match MongoDB's expected sort format
-    let sortStage: { [key: string]: 1 | -1 } = {};
+  async listAll(
+    sort: "recent" | "high" | "low",
+    search: string = ""
+  ): Promise<IBook[]> {
+    const query: any = {};
 
-    if (sort === 'high') {
-      sortStage = { averageRating: -1, createdAt: -1 }; // descending by averageRating, then createdAt
-    } else if (sort === 'low') {
-      sortStage = { averageRating: 1, createdAt: -1 }; // ascending by averageRating, descending by createdAt
-    } else {
-      sortStage = { createdAt: -1 }; // descending by createdAt (recent)
+
+    if (search && search.trim() !== "") {
+      query.title = { $regex: search, $options: "i" };
+
     }
 
-    return await BookModel.find().sort(sortStage);
+    // Sorting logic
+    let sortStage: { [key: string]: 1 | -1 } = {};
+
+    if (sort === "high") {
+      sortStage = { averageRating: -1, createdAt: -1 };
+    } else if (sort === "low") {
+      sortStage = { averageRating: 1, createdAt: -1 };
+    } else {
+      sortStage = { createdAt: -1 };
+    }
+
+    return await BookModel.find(query).sort(sortStage).lean();
   }
 
   async updateAverageRating(bookId: string, avg: number): Promise<void> {
