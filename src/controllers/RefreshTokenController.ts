@@ -21,7 +21,7 @@ export class RefreshTokenController {
 
       res.json({
         success: true,
-        ...tokens, // { accessToken, refreshToken }
+        ...tokens, 
       });
     } catch (err) {
       next(err);

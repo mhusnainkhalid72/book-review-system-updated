@@ -15,5 +15,5 @@ import { TTL } from '../cache/cache.ttl';
   await RedisCache.set(CacheKeys.hotBooks(1, 10), hotBooks, TTL.HOT_BOOKS);
 
   console.log('Hot books updated:', hotBooks);
-  process.exit(0); // Exit after script finishes
+  process.exit(0); 
 })();

@@ -1,59 +1,63 @@
-// FILE: src/services/EmailService.ts
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
-const SMTP_HOST = process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com'; // [CHANGED] env-driven, default gmail
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587); // [CHANGED]
-const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER; // [CHANGED]
-const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASS; // [CHANGED]
-const FROM_EMAIL = process.env.FROM_EMAIL || SMTP_USER; // [ADDED]
+const isProd = process.env.NODE_ENV === "production";
 
-if (!SMTP_USER || !SMTP_PASS) {
-  console.error('[EmailService] Missing SMTP_USER/SMTP_PASS in env');
+const GMAIL_HOST = process.env.GMAIL_HOST || "smtp.gmail.com";
+const GMAIL_PORT = Number(process.env.GMAIL_PORT || 587);
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_PASS = process.env.GMAIL_PASS;
+const GMAIL_FROM = process.env.GMAIL_FROM || GMAIL_USER;
+
+if (!GMAIL_USER || !GMAIL_PASS) {
+  console.error("[EmailService] Missing Gmail credentials in env");
 }
 
-// Configure transporter
 const transporter = nodemailer.createTransport({
-  host: SMTP_HOST,                  // [FIX] was "gmail"
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465,        // true for 465, false for 587/25
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS,
-  },
-  pool: true,                       // [ADDED]
+  host: GMAIL_HOST,
+  port: GMAIL_PORT,
+  secure: GMAIL_PORT === 465,
+  auth: { user: GMAIL_USER, pass: GMAIL_PASS },
+  pool: true,
   maxConnections: 5,
   maxMessages: 50,
-  connectionTimeout: 15000,
-  greetingTimeout: 10000,
-  socketTimeout: 20000,
+  connectionTimeout: 15_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 20_000,
+  logger: !isProd,
 } as any);
 
-// Verify on module load (optional, but great for early failure)
+// Verify on load
 transporter.verify().then(
-  () => console.log('[EmailService] SMTP verified'),
-  (err) => console.error('[EmailService] SMTP verify failed', {
-    code: err?.code, command: err?.command, response: err?.response, message: err?.message,
-  })
+  () => console.log("[EmailService] Gmail SMTP ready"),
+  (err) =>
+    console.error("[EmailService] Gmail verify failed", {
+      code: err?.code,
+      command: err?.command,
+      message: err?.message,
+    })
 );
 
 export async function sendEmail(to: string, subject: string, body: string): Promise<void> {
   try {
     const info = await transporter.sendMail({
-      from: `"Book Review App" <${FROM_EMAIL}>`,
+      from: `"Book Review App" <${GMAIL_FROM}>`,
       to,
       subject,
-      text: body || ' ',
+      text: body || " ",
     });
-    console.log(`[EmailService] Sent to ${to}`, {
-      id: info?.messageId, accepted: info?.accepted, rejected: info?.rejected, response: info?.response,
+    console.log("[EmailService] Sent", {
+      id: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response,
     });
   } catch (err: any) {
-    console.error('[EmailService] Failed to send email', {
-      code: err?.code, command: err?.command, response: err?.response, message: err?.message, stack: err?.stack,
+    console.error("[EmailService] Send failed", {
+      message: err?.message,
+      code: err?.code,
+      response: err?.response,
     });
-    // rethrow a clean error if caller cares:
-    // throw new Error(`EMAIL_SEND_FAILED: ${err?.message || 'unknown'}`);
   }
 }

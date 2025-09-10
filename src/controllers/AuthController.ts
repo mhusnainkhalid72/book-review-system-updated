@@ -9,6 +9,8 @@ import { SessionModel } from "../databases/models/Session";
 import { RoleModel } from "../databases/models/Role";
 import { RefreshTokenModel } from "../databases/models/RefreshToken";
 
+import { sendMailViaMailcow } from "../services/mailcowService";
+
 
 const ACCESS_TTL_MS = 15 * 60 * 1000;           // 15 minutes
 const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -56,20 +58,19 @@ export class AuthController {
   }
 
   // LOGIN -> returns opaque access + opaque refresh
+// LOGIN -> returns opaque access + opaque refresh
+
   public async login(req: Request, res: Response) {
     const { email, password } = req.body;
 
     const user = await UserModel.findOne({ email });
-    // TODO: replace with hashed password compare
     if (!user || user.password !== password) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Access token (session-based)
-    const { token } = await this.sessions.createForLogin(user._id.toString(), req);
-
-    // Refresh token (opaque, 7 days)
+    const token = newOpaqueToken();
     const refreshToken = newOpaqueToken();
+
     await RefreshTokenModel.create({
       user: user._id,
       token: refreshToken,
@@ -78,19 +79,40 @@ export class AuthController {
     });
 
     res.setHeader("Authorization", `Bearer ${token}`);
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       accessToken: token,
       refreshToken,
       user: { id: user._id, email: user.email, name: user.name },
       expiresIn: ACCESS_TTL_MS / 1000,
     });
+
+    // Fire and forget mail
+    (async () => {
+      try {
+        const subject = "New login to your account";
+        const text = `Hello ${user.name || user.email},
+
+A login to your account was detected.
+Time: ${new Date().toISOString()}
+IP: ${req.ip || req.connection.remoteAddress}`;
+
+        const result = await sendMailViaMailcow({
+          to: user.email,
+          subject,
+          text,
+        });
+
+        if (!result.ok) {
+          console.error("Login mail via Mailcow failed:", result.error);
+        }
+      } catch (err: any) {
+        console.error("Unexpected error while sending login mail:", err?.message || err);
+      }
+    })();
   }
 
-  // NOTE: ❌ Do NOT put a refresh() method here anymore.
-  // The refresh flow is handled by RefreshTokenController + RefreshTokenService.
-
-  // LOGOUT current session; optionally revoke a provided refresh token
+ 
   public async logout(req: Request, res: Response) {
     const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) {
