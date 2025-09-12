@@ -20,7 +20,7 @@ const controller = new ReviewController(service);
 
 const reviewRateLimit = rateLimiter({
   keyPrefix: 'reviews',
-  limit: Number(process.env.REVIEW_RATE_LIMIT || 2),
+  limit: Number(process.env.REVIEW_RATE_LIMIT || 10),
   windowSeconds: Number(process.env.REVIEW_RATE_LIMIT_WINDOW || 600)
 });
 

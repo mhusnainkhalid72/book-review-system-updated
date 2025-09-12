@@ -1,7 +1,7 @@
 import { Response } from "express";
 import BaseResponseDto from "../BaseResponseDto";
 
-export default class DeleteReviewResponseDto extends BaseResponseDto {
+export default class DeleteReviewResponseDto extends BaseResponseDto<null> {
   constructor(res: Response, success: boolean, message: string) {
     super(
       res,

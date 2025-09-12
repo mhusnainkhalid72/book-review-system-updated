@@ -12,6 +12,7 @@ import ListReviewsByBookResponseDto from "../dto/responses/review/ListReviewsByB
 import UpdateReviewResponseDto from "../dto/responses/review/UpdateReviewResponseDto";
 import DeleteReviewResponseDto from "../dto/responses/review/DeleteReviewResponseDto";
 import { NotificationService } from "../services/notification.service";
+import { IReview } from "../databases/models/Review";
 
 
 
@@ -52,31 +53,37 @@ export class ReviewController {
     }
   }
 
- 
   public async getByBookId(req: Request, res: Response) {
     try {
       const { bookId } = req.params;
-      const sort = (req.query.sort as 'recent' | 'popular') || 'recent';
-      const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
-      const limit = Math.min(100, Math.max(1, parseInt((req.query.limit as string) || '20', 10)));
-
-      const key = sort === 'popular'
-        ? CacheKeys.bookReviewsPopular(bookId, page, limit)
-        : CacheKeys.bookReviewsRecent(bookId, page, limit);
-
-      const data = await RedisCache.wrap(
-        key,
-        withJitter(TTL.BOOK_REVIEWS),
-        () => this.reviews.getByBookId(bookId, sort, page, limit)
+      const sort = (req.query.sort as "recent" | "popular") || "recent";
+      const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt((req.query.limit as string) || "20", 10))
       );
 
-      return new ListReviewsByBookResponseDto(res, true, "Reviews fetched successfully", data);
+      // ✅ FIXED: Explicitly type the return value from service
+      const data: {
+        reviews: IReview[];
+        sentimentStats: { positive: number; neutral: number; negative: number };
+        overall: { verdict: string; score: number };
+      } = await this.reviews.getByBookId(bookId, sort, page, limit);
+
+      return new ListReviewsByBookResponseDto(
+        res,
+        true,
+        "Reviews fetched successfully",
+        data
+      );
     } catch (err: any) {
-      return new ListReviewsByBookResponseDto(res, false, err.message || "Failed to fetch reviews");
+      return new ListReviewsByBookResponseDto(
+        res,
+        false,
+        err.message || "Failed to fetch reviews"
+      );
     }
   }
-
- 
   public async update(req: Request, res: Response) {
     try {
       const user = res.locals.user;

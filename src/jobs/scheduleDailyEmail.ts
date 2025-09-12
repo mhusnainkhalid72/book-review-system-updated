@@ -2,9 +2,9 @@
 import { notificationQueue, DAILY_EMAIL_JOB } from '../queues/notification.queue';
 
 export function scheduleDailyEmail() {
-  const FIVE_MINUTES = 5 * 60 * 1000;
+  const HOURS_TWETNYTHREE = 23 * 60 * 60 * 1000;
 
-  // Start first run after 5 minutes (so app can fully boot)
+
   setTimeout(async () => {
     try {
       await notificationQueue.add(DAILY_EMAIL_JOB, {}, { removeOnComplete: true, removeOnFail: 100 }); // [CHANGED]
@@ -21,9 +21,9 @@ export function scheduleDailyEmail() {
       } catch (err: any) {
         console.error('[Jobs] Failed to enqueue repeat DAILY_EMAIL_JOB', { message: err?.message });
       }
-    }, FIVE_MINUTES);
+    }, HOURS_TWETNYTHREE );
 
-  }, FIVE_MINUTES);
+  },HOURS_TWETNYTHREE );
 
-  console.log('[Jobs] Daily email scheduler initialized for every 5 minutes');
+  console.log('[Jobs] Daily email scheduler initialized for every 23 HOUR');
 }

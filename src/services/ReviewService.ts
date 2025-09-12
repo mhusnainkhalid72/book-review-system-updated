@@ -4,6 +4,7 @@ import { AppError } from '../error/AppError';
 import { Types } from 'mongoose'; 
 import { ReviewModel } from '../databases/models/Review';
 import { DAILY_EMAIL_JOB, notificationQueue, PUSH_JOB } from '../queues/notification.queue';
+import { analyzeReview } from '../lib/aiSentiment';
 
 export class ReviewService {
   constructor(private reviews: IReviewRepository, private books: IBookRepository) {}
@@ -14,13 +15,24 @@ export class ReviewService {
       if (book.user.toString() === userId) throw new AppError('Cannot review your own book', 400);
 
       const existing = await this.reviews.findUserReviewForBook(userId, data.bookId);
+
       if (existing) throw new AppError('You already reviewed this book', 409);
 
+       // [AI INTEGRATION] Analyze before saving
+  let aiSummary = "";
+      let aiSentiment = "neutral";
+      if (data.message) {
+        const aiResult = await analyzeReview(data.message);
+        aiSummary = aiResult.summary;
+        aiSentiment = aiResult.sentiment;
+      }
       const review = await this.reviews.create({
         user: new Types.ObjectId(userId),
         book: new Types.ObjectId(data.bookId),
         rating: data.rating,
         message: data.message,
+        summary: aiSummary,   
+        sentiment: aiSentiment,
       });
 
       const avg = await this.reviews.calcBookAverage(data.bookId);
@@ -60,25 +72,38 @@ export class ReviewService {
     }
   }
 
-  // ... (rest of the class unchanged)
-
-  
-
   async getById(id: string) {
     const review = await this.reviews.findById(id);
     if (!review) throw new AppError('Review not found', 404);
     return review;
   }
-  async getByBookId(
-    bookId: string,
-    sort: 'recent' | 'popular' = 'recent',
-    page = 1,
-    limit = 20
-  ) {
-    const docs = await this.reviews.findByBookId(bookId, sort, page, limit);
-    if (!docs || docs.length === 0) throw new AppError('No reviews for this book', 404);
-    return docs;
+async getByBookId(
+  bookId: string,
+  sort: 'recent' | 'popular' = 'recent',
+  page = 1,
+  limit = 20
+) {
+  const docs = await this.reviews.findByBookId(bookId, sort, page, limit);
+  if (!docs || docs.length === 0) throw new AppError('No reviews for this book', 404);
+
+  const sentimentStats = { positive: 0, neutral: 0, negative: 0 };
+  for (const r of docs) {
+    if (r.sentiment === "positive") sentimentStats.positive++;
+    else if (r.sentiment === "negative") sentimentStats.negative++;
+    else sentimentStats.neutral++;
   }
+
+  const total = sentimentStats.positive + sentimentStats.neutral + sentimentStats.negative;
+  const score = total > 0 ? sentimentStats.positive / total : 0;
+  const verdict = score >= 0.5 ? "Worthy to Read" : "Not Worthy";
+
+  return {
+    reviews: docs,
+    sentimentStats,
+    overall: { verdict, score },
+  };
+}
+
   async update(userId: string, id: string, data: Partial<{ rating: number; message?: string }>) {
     const review = await this.reviews.findById(id);
     if (!review) throw new AppError('Review not found', 404);

@@ -8,6 +8,8 @@ export interface IReview extends Document {
   createdAt: Date;      
   updatedAt: Date;      
   createdAtPKT: string; 
+    summary?: string;      // [ADDED]
+  sentiment?: string; 
 }
 
 const ReviewSchema: Schema<IReview> = new Schema(
@@ -17,6 +19,8 @@ const ReviewSchema: Schema<IReview> = new Schema(
     rating: { type: Number, required: true, min: 1, max: 5 },
     message: { type: String, trim: true },
     createdAtPKT: { type: String }, 
+       summary: { type: String },   // [ADDED]
+    sentiment: { type: String },
   },
   { timestamps: true } 
 );

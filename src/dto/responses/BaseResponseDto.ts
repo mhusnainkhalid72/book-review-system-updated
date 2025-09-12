@@ -2,7 +2,6 @@ import { Response } from "express";
 
 type AnyObj = Record<string, any>;
 
-
 function toPlain(val: any): any {
   if (!val) return val;
   if (typeof val.toJSON === "function") return val.toJSON();
@@ -33,13 +32,13 @@ function sanitize(val: any): any {
   return val;
 }
 
-export default class BaseResponseDto {
+export default class BaseResponseDto<T = any> {
   constructor(
     res: Response,
     statusCode: number,
     status: "pass" | "fail",
     message: string,
-    data: any = null
+    data?: T | null
   ) {
     res.status(statusCode).json({
       statusCode,

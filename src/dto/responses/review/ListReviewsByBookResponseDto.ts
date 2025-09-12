@@ -1,14 +1,24 @@
 import { Response } from "express";
 import BaseResponseDto from "../BaseResponseDto";
 
-export default class ListReviewsByBookResponseDto extends BaseResponseDto {
-  constructor(res: Response, success: boolean, message: string, reviews?: any[]) {
+type ReviewsByBookData = {
+  reviews: any[];
+  sentimentStats: { positive: number; neutral: number; negative: number };
+  overall: { verdict: string; score: number };
+};
+
+export default class ListReviewsByBookResponseDto extends BaseResponseDto<ReviewsByBookData> {
+  constructor(res: Response, success: boolean, message: string, data?: ReviewsByBookData) {
     super(
       res,
-      success ? 200 : 404, // 404 when "No reviews for this book"
+      success ? 200 : 404,
       success ? "pass" : "fail",
       message,
-      reviews ?? []
+      data ?? {
+        reviews: [],
+        sentimentStats: { positive: 0, neutral: 0, negative: 0 },
+        overall: { verdict: "N/A", score: 0 },
+      }
     );
   }
 }

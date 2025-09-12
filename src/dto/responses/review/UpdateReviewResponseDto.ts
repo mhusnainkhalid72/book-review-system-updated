@@ -1,7 +1,7 @@
 import { Response } from "express";
 import BaseResponseDto from "../BaseResponseDto";
 
-export default class UpdateReviewResponseDto extends BaseResponseDto {
+export default class UpdateReviewResponseDto extends BaseResponseDto<any> {
   constructor(res: Response, success: boolean, message: string, review?: any) {
     super(
       res,
