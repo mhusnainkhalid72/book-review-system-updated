@@ -9,7 +9,7 @@ import { sendPush } from './PushService';
 
 export class NotificationService {
 
-  static async sendDailyEmail(userId?: string, windowMinutes: number = 10) {
+  static async sendDailyEmail(userId?: string, windowMinutes: number = 60) {
     try {
       const since = new Date(Date.now() - windowMinutes * 60 * 1000);
 

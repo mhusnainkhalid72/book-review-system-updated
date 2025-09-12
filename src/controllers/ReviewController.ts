@@ -43,6 +43,24 @@ export class ReviewController {
       return new CreateReviewResponseDto(res, false, err.message || "Failed to create review");
     }
   }
+// Inside ReviewController class
+
+public async reportReview(req: Request, res: Response) {
+  try {
+    const user = res.locals.user;
+    const { reviewId, reason } = req.body;
+
+    const review = await this.reviews.getById(reviewId);
+    if (!review) return res.status(404).json({ success: false, message: "Review not found" });
+
+    if (review.user.toString() === user.id)
+      return res.status(400).json({ success: false, message: "Cannot report your own review" });
+
+    res.json({ success: true, message: "Report feature available via /reports route" });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
 
   public async getById(req: Request, res: Response) {
     try {

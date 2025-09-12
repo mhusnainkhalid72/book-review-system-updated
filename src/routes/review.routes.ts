@@ -11,6 +11,7 @@ import { asyncHandler } from '../lib/asyncHandler';
 import { requireToken } from '../middlewares/requireToken';
 import { rateLimiter } from '../middlewares/rateLimiter';
 
+
 const router = Router();
 
 const reviewRepo = new ReviewRepository();
@@ -30,5 +31,6 @@ router.get('/book/:bookId', asyncHandler(controller.getByBookId.bind(controller)
 router.get('/:id', asyncHandler(controller.getById.bind(controller)));
 router.put('/:id', requireToken, validate(UpdateReviewDTOSchema), asyncHandler(controller.update.bind(controller)));
 router.delete('/:id', requireToken, asyncHandler(controller.remove.bind(controller)));
+router.post("/report", requireToken, asyncHandler(controller.reportReview.bind(controller)));
 
 export default router;
